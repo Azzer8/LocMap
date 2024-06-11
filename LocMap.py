@@ -15,6 +15,7 @@ class MainWindow(QMainWindow, index.Ui_MainWindow):
         self.setWindowTitle(__appname__)
         # self.setWindowState(Qt.WindowState.WindowMaximized)
         self.activateWindow()
+        
 
         self.btn_arrowL.clicked.connect(self.showPrevious)
         self.btn_arrowR.clicked.connect(self.showNext)
