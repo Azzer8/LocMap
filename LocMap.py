@@ -164,7 +164,7 @@ class MainWindow(QMainWindow, index.Ui_MainWindow):
         if current_widget:
             canvas = current_widget.findChild(Canvas)
             if canvas:
-                canvas.loadPixmap(canvas.pixmap)  # Перезагружаем изображение для сброса масштаба
+                canvas.loadPixmap(canvas.pixmap)
                 canvas.repaint()
     
     
