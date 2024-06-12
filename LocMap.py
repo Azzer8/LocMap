@@ -1,10 +1,12 @@
 import sys
 import cv2
 import numpy as np
-from PyQt6.QtWidgets import (QMainWindow, QApplication, QFileDialog, QLabel, 
-                                            QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QScrollArea)
-from PyQt6.QtCore import QSize, Qt, QPointF, QRectF
-from PyQt6.QtGui import QPixmap, QImage, QFont, QPainter, QWheelEvent
+from PyQt6.QtWidgets import (QLabel, QMainWindow, QApplication, QFileDialog,
+                            QWidget, QHBoxLayout, QScrollArea, QDialog, 
+                            QVBoxLayout, QProgressBar, QTextEdit)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap, QImage, QPainter
+from paddleocr import PaddleOCR, draw_ocr
 import index
 
 __appname__ = "LocMap"
@@ -38,7 +40,7 @@ class Canvas(QWidget):
     def resizeImageToFit(self):
         if not self.pixmap:
             return
-        area = self.parent().size()  # Получаем размеры родительского виджета (scroll_area)
+        area = self.parent().size()
         w, h = self.pixmap.width(), self.pixmap.height()
         aw, ah = area.width(), area.height()
         scale_w = aw / w
@@ -59,6 +61,38 @@ class Canvas(QWidget):
         else:
             super(Canvas, self).wheelEvent(event)
 
+class OcrProgressDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("OCR Progress")
+        self.setGeometry(100, 100, 600, 400)
+        self.layout = QVBoxLayout()
+
+        self.image_path_label = QLabel(self)
+        self.layout.addWidget(self.image_path_label)
+
+        self.progress_bar = QProgressBar(self)
+        self.layout.addWidget(self.progress_bar)
+
+        self.scroll_area = QScrollArea(self)
+        self.scroll_area.setWidgetResizable(True)
+
+        self.ocr_result_text = QTextEdit(self)
+        self.ocr_result_text.setReadOnly(True)
+        self.scroll_area.setWidget(self.ocr_result_text)
+
+        self.layout.addWidget(self.scroll_area)
+        self.setLayout(self.layout)
+
+    def set_image_path(self, image_path):
+        self.image_path_label.setText(f"Processing: {image_path}")
+
+    def set_progress(self, value):
+        self.progress_bar.setValue(value)
+
+    def append_ocr_result(self, result):
+        self.ocr_result_text.append(result)
+
 class MainWindow(QMainWindow, index.Ui_MainWindow):
     def __init__(self):
         super().__init__()
@@ -75,7 +109,18 @@ class MainWindow(QMainWindow, index.Ui_MainWindow):
         self.img_pathsList = []
         self.current_index = self.stackedWid_images.currentIndex()
         
-    
+        self.ocr = PaddleOCR(use_pdserving=False,
+                             use_angle_cls=False,
+                             det=True,
+                             rec=True,
+                             cls=False,
+                             use_gpu=False,
+                             lang="en",
+                             show_log=True)
+
+        self.progress_dialog = OcrProgressDialog(self)
+
+
     def showPrevious(self):
         self.current_index = self.stackedWid_images.currentIndex()
         previous_index = self.current_index - 1
@@ -85,7 +130,7 @@ class MainWindow(QMainWindow, index.Ui_MainWindow):
             previous_index = self.stackedWid_images.count() - 1
             self.stackedWid_images.setCurrentIndex(previous_index)
         image_name = self.img_pathsList[previous_index].split('/')[-1]
-        self.imgName_label.setText(f"{image_name}")
+        self.imgName_label.setText(f"№ {previous_index + 1} | {image_name}")
         self.updateCurrentCanvas()
 
     def showNext(self):
@@ -97,7 +142,7 @@ class MainWindow(QMainWindow, index.Ui_MainWindow):
             next_index = 0
             self.stackedWid_images.setCurrentIndex(next_index)
         image_name = self.img_pathsList[next_index].split('/')[-1]
-        self.imgName_label.setText(f"{image_name}")
+        self.imgName_label.setText(f"№ {next_index + 1} | {image_name}")
         self.updateCurrentCanvas()
         
     def clear_all_pages(self):
@@ -108,14 +153,17 @@ class MainWindow(QMainWindow, index.Ui_MainWindow):
     
     def btn_open_images(self):
         clear_flag = False
-        
-        self.img_pathsList.extend(QFileDialog.getOpenFileNames(self, "Open Image Files", "", "Images (*.png *.jpg *.jpeg *.bmp)")[0])
+        previous_paths = set(self.img_pathsList)
+        selected_pathsList = QFileDialog.getOpenFileNames(self, "Open Image Files", "", "Images (*.png *.jpg *.jpeg *.bmp)")[0]
+        if set(selected_pathsList) - previous_paths:
+            self.img_pathsList.extend(selected_pathsList)
         if self.img_pathsList:
             if self.stackedWid_images.count() > 0:
                 temp_index = self.stackedWid_images.currentIndex()
                 self.clear_all_pages()
                 clear_flag = True
             
+            # self.progress_dialog.show()
             for file in self.img_pathsList:
                 self.add_image_to_stacked_widget(file)
             
@@ -129,7 +177,7 @@ class MainWindow(QMainWindow, index.Ui_MainWindow):
             
             self.current_index = self.stackedWid_images.currentIndex()
             image_name = self.img_pathsList[self.current_index].split('/')[-1]
-            self.imgName_label.setText(f"{image_name}")
+            self.imgName_label.setText(f"№ {self.current_index + 1} | {image_name}")
             self.updateCurrentCanvas()
             
     def add_image_to_stacked_widget(self, image_path):
@@ -159,6 +207,8 @@ class MainWindow(QMainWindow, index.Ui_MainWindow):
         
         self.canvas.resizeImageToFit()
         
+        # self.perform_ocr(image_path)
+        
     def updateCurrentCanvas(self):
         current_widget = self.stackedWid_images.currentWidget()
         if current_widget:
@@ -167,7 +217,26 @@ class MainWindow(QMainWindow, index.Ui_MainWindow):
                 canvas.loadPixmap(canvas.pixmap)
                 canvas.repaint()
     
-    
+    def perform_ocr(self, image_path):
+        self.progress_dialog.set_image_path(image_path)
+        self.progress_dialog.show()
+        
+        result = self.ocr.ocr(image_path)
+        ocr_results = []
+        total_items = sum(len(line) for line in result)
+        processed_items = 0
+        for line in result:
+            for word_info in line:
+                text = word_info[1][0]
+                bbox = word_info[0]
+                ocr_results.append(f'Text: {text}, BBox: {bbox}')
+                processed_items += 1
+                self.progress_dialog.set_progress((processed_items / total_items) * 100)
+        
+        ocr_text = "\n".join(ocr_results)
+        self.progress_dialog.append_ocr_result(image_path)
+        self.progress_dialog.append_ocr_result(ocr_text)
+        self.progress_dialog.append_ocr_result("\n")
     
 def main():
     app = QApplication(sys.argv)
