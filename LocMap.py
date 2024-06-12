@@ -163,7 +163,7 @@ class MainWindow(QMainWindow, index.Ui_MainWindow):
                 self.clear_all_pages()
                 clear_flag = True
             
-            # self.progress_dialog.show()
+            self.progress_dialog.show()
             for file in self.img_pathsList:
                 self.add_image_to_stacked_widget(file)
             
@@ -205,9 +205,7 @@ class MainWindow(QMainWindow, index.Ui_MainWindow):
         self.page.setLayout(page_HLayout)
         self.stackedWid_images.addWidget(self.page)
         
-        self.canvas.resizeImageToFit()
-        
-        # self.perform_ocr(image_path)
+        self.perform_ocr(image_path)
         
     def updateCurrentCanvas(self):
         current_widget = self.stackedWid_images.currentWidget()
