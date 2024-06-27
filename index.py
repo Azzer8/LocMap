@@ -329,6 +329,6 @@ class Ui_MainWindow(object):
         self.label_2.setText(_translate("MainWindow", "Распознанные значения:"))
         self.label_3.setText(_translate("MainWindow", "Координаты глубин:"))
         self.btn_open.setText(_translate("MainWindow", "Открыть"))
-        self.btn_saveImg.setText(_translate("MainWindow", "Сохранить изображение"))
+        self.btn_saveImg.setText(_translate("MainWindow", "Сохранить изображения"))
         self.btn_saveData.setText(_translate("MainWindow", "Сохранить значения"))
         self.btn_rerec.setText(_translate("MainWindow", "Перераспознать"))

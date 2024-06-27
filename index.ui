@@ -490,7 +490,7 @@ QPushButton:hover {
 }</string>
         </property>
         <property name="text">
-         <string>Сохранить изображение</string>
+         <string>Сохранить изображения</string>
         </property>
        </widget>
       </item>
