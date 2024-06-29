@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (QMainWindow, QApplication, QFileDialog,
                                         QMessageBox, QVBoxLayout, QProgressBar, 
                                         QDialogButtonBox)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QPixmap, QImage, QPainter, QCursor, QFont
+from PyQt6.QtGui import QPixmap, QImage, QPainter, QCursor
 from paddleocr import PaddleOCR
 import Index
 
@@ -85,14 +85,14 @@ class Worker(QThread):
                     if self.model == 'ocr':
                         h, w, _ = cv2.imdecode(np.fromfile(Imgpath, dtype=np.uint8), 1).shape
                         if h > 32 and w > 32:
-                            self.temp_result_dic = self.ocr.ocr(Imgpath)[0]
+                            self.temp_result_dic = self.ocr.ocr(Imgpath, cls=False, bin=False, inv=False)[0]
                             self.result_dic = []
                             for res in self.temp_result_dic:
                                 value = res[1][0]
                                 if len([c for c in value if c.isalpha()]) < 2 and any(c.isdigit() for c in value):
                                     self.result_dic.append(res)
                         else:
-                            print('Размер изображения', Imgpath, 'очень мал для распознавания')
+                            print('Размер изображения', Imgpath, 'очень мал для распознавания.')
                             self.result_dic = None
 
                     if self.result_dic is None or len(self.result_dic) == 0:
@@ -108,15 +108,15 @@ class Worker(QThread):
             self.endsignal.emit(0, "readAll")
             self.exec()
         except Exception as e:
-            print(e)
+            print("Worker:", e)
             raise
 
 class OcrProgressDialog(QDialog):
     def __init__(self, parent=None, ocr=None, imgs_pathsList=None, lenbar=0):
         super(OcrProgressDialog, self).__init__(parent)
         self.setFixedWidth(700)
-        self.setWindowTitle("Процесс распознавания")
-        self.ADparent = parent
+        self.setWindowTitle("Процесс распознавания..")
+        self.OPDparent = parent
         self.ocr = ocr
         self.imgs_pathsList = imgs_pathsList
         self.lender = lenbar
@@ -128,9 +128,9 @@ class OcrProgressDialog(QDialog):
         layout.addWidget(self.pb)
 
         self.buttonBox = BB(BB.StandardButton.Ok, Qt.Orientation.Horizontal, self)
-        self.buttonBox.button(BB.StandardButton.Ok).setEnabled(False)
+        self.buttonBox.setEnabled(False)
         self.buttonBox.button(BB.StandardButton.Ok).setText("ОК")
-        self.buttonBox.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.buttonBox.button(BB.StandardButton.Ok).setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.buttonBox.setStyleSheet("""
 QPushButton {
     font-family: "Verdana";\n
@@ -148,13 +148,13 @@ QPushButton:hover {\n
 }
         """)
         
-        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.accepted.connect(self.validate)
         layout.addWidget(self.buttonBox)
 
         self.setLayout(layout)
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
 
-        self.thread_1 = Worker(self.ocr, self.imgs_pathsList, self.ADparent, 'ocr')
+        self.thread_1 = Worker(self.ocr, self.imgs_pathsList, self.OPDparent, 'ocr')
         self.thread_1.progressBarValue.connect(self.handleProgressBarSingal)
         self.thread_1.endsignal.connect(self.handleEndsignalSignal)
 
@@ -162,28 +162,21 @@ QPushButton:hover {\n
         self.pb.setValue(i)
 
     def handleEndsignalSignal(self, i, str):
-        if self.exec():
-            self.buttonBox.button(BB.StandardButton.Ok).setEnabled(True)
+        self.buttonBox.setEnabled(True)
 
     def validate(self):
-        self.thread_1.quit()
-        self.thread_1.wait()
         self.accept()
 
     def popUp(self):
         self.thread_1.start()
-        return 1 if self.exec() else None
+        return 1 if self.exec() == QDialog.DialogCode.Accepted else None
 
     def closeEvent(self, event):
         print("closed")
-        if self.thread_1.isRunning():
-            self.thread_1.quit()
-            self.thread_1.wait()
-            # self.close()
-        else: self.validate()
-        # self.thread_1.handle = -1
-        # while not self.thread_1.isFinished():
-        #     self.thread_1.quit()
+        self.thread_1.quit()
+        self.thread_1.wait()
+        self.accept()
+        
 
 class MainWindow(QMainWindow, Index.Ui_MainWindow):
     def __init__(self):
@@ -202,21 +195,16 @@ class MainWindow(QMainWindow, Index.Ui_MainWindow):
         self.imgs_pathsList = []
         self.current_index = self.stackedWid_images.currentIndex()
         
-        self.ocr = PaddleOCR(use_pdserving=False,
-                                    use_angle_cls=False,
-                                    det=True,
-                                    rec=True,
-                                    cls=False,
-                                    use_gpu=False,
-                                    lang="en",
-                                    show_log=True,
+        self.ocr = PaddleOCR(show_log=True, use_angle_cls=False, lang="en",
                                     det_model_dir="models/det/en_PP-OCRv3_det_infer",
                                     rec_model_dir="models/rec/en_PP-OCRv4_rec_infer",
-                                    cls_model_dir="models/cls/ch_ppocr_mobile_v2.0_cls_infer",  
+                                    cls_model_dir="models/cls",
+                                    use_pdserving=False,
+                                    max_text_length = 5
         )
         
         self.results_dic = {}
-        self.ocrProgressDialog = OcrProgressDialog(parent=self)
+        self.ocrProgressDialog = None
 
     def btn_open_images(self):
         clear_flag = False
@@ -224,15 +212,17 @@ class MainWindow(QMainWindow, Index.Ui_MainWindow):
         selected_pathsList = QFileDialog.getOpenFileNames(self, "Выберите изображения", "", "Images (*.png *.jpg *.jpeg *.bmp)")[0]
         if set(selected_pathsList) - previous_paths:
             self.imgs_pathsList.extend(selected_pathsList)
-        if self.imgs_pathsList and selected_pathsList:
+        if self.imgs_pathsList and selected_pathsList and set(selected_pathsList) - previous_paths:
             if self.stackedWid_images.count() > 0:
                 temp_index = self.stackedWid_images.currentIndex()
                 self.clear_all_pages()
                 clear_flag = True
             
             self.results_dic = {}
-            self.ocrProgressDialog = OcrProgressDialog(parent=self, ocr=self.ocr, imgs_pathsList=self.imgs_pathsList, lenbar=len(self.imgs_pathsList))
-            self.ProgressDialogRes = self.ocrProgressDialog.popUp()
+            if self.ocrProgressDialog is None or self.ocrProgressDialog.isHidden():
+                self.ocrProgressDialog = OcrProgressDialog(parent=self, ocr=self.ocr, imgs_pathsList=self.imgs_pathsList, lenbar=len(self.imgs_pathsList))
+                self.ProgressDialogRes = self.ocrProgressDialog.popUp()
+                print(self.ProgressDialogRes)
             
             if self.ProgressDialogRes:
                 for _ in range(len(self.imgs_pathsList)):
@@ -358,9 +348,8 @@ class MainWindow(QMainWindow, Index.Ui_MainWindow):
             QMessageBox.information(self, "Информация", f"Изображения успешно сохранены в\n{selected_directory}")
         else:
             QMessageBox.warning(self, "Информация", f"Изображения не сохранены!")
-            
-    
-        
+
+
 
 def main():
     app = QApplication(sys.argv)
