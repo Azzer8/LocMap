@@ -48,7 +48,7 @@ color: rgb(0, 0, 0)</string>
      <number>7</number>
     </property>
     <item>
-     <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0" columnstretch="6,1">
+     <layout class="QGridLayout" name="gridLayout" rowstretch="0,0" columnstretch="6,1">
       <property name="spacing">
        <number>7</number>
       </property>
@@ -342,11 +342,93 @@ padding: 5px;</string>
             <height>16777215</height>
            </size>
           </property>
+          <property name="font">
+           <font>
+            <family>Verdana</family>
+            <pointsize>11</pointsize>
+           </font>
+          </property>
           <property name="styleSheet">
            <string notr="true">border-radius: 12px;
 background-color: rgb(245, 245, 245);
 padding: 5px;</string>
           </property>
+          <property name="batchSize">
+           <number>250</number>
+          </property>
+          <property name="selectionRectVisible">
+           <bool>false</bool>
+          </property>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>12</string>
+           </property>
+          </item>
          </widget>
         </item>
         <item>
@@ -383,11 +465,58 @@ padding: 5px;</string>
             <height>300</height>
            </size>
           </property>
+          <property name="font">
+           <font>
+            <family>Verdana</family>
+            <pointsize>8</pointsize>
+           </font>
+          </property>
           <property name="styleSheet">
            <string notr="true">border-radius: 12px;
 background-color: rgb(245, 245, 245);
 padding: 5px;</string>
           </property>
+          <property name="resizeMode">
+           <enum>QListView::Adjust</enum>
+          </property>
+          <property name="batchSize">
+           <number>250</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>[[496.0, 1.0], [528.0, 6.0], [525.0, 26.0], [493.0, 22.0]]</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>[[496.0, 1.0], [528.0, 6.0], [525.0, 26.0], [493.0, 22.0]]</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>[[496.0, 1.0], [528.0, 6.0], [525.0, 26.0], [493.0, 22.0]]</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>[[496.0, 1.0], [528.0, 6.0], [525.0, 26.0], [493.0, 22.0]]</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>[[496.0, 1.0], [528.0, 6.0], [525.0, 26.0], [493.0, 22.0]]</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>[[496.0, 1.0], [528.0, 6.0], [525.0, 26.0], [493.0, 22.0]]</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>[[496.0, 1.0], [528.0, 6.0], [525.0, 26.0], [493.0, 22.0]]</string>
+           </property>
+          </item>
          </widget>
         </item>
        </layout>
